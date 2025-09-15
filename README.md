@@ -51,7 +51,7 @@ Once the use is statisfied with the analysis results, the final step is to expor
 
 Select the 'Run' button to begin the export and the task will appear under 'Submitted Tasks' in the console. While the data is being exported, the user will have to wait. Once completed, the tasks will change from a grey fill to a blue fill and the files will be available in their respective GoogleDrive folders. See below for three completed tasks and one still running.
 
-![image]([images/taskCompleted.png)](https://github.com/LamantiaKara/Glacier-Snowline-Tool/blob/main/images/taskCompleted.png?raw=true)
+![image](https://github.com/LamantiaKara/Glacier-Snowline-Tool/blob/main/images/taskCompleted.png?raw=true)
 
 After all the tasks haved finished, this means you are done! You have completed all the steps to acquiring your yearly snowline data from the Glacier Snowline Tool. 
 
