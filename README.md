@@ -5,4 +5,5 @@ The Glacier Snowline Tool is a Google Earth Engine Tool for assessing yearly gla
 
 ## How to use the Glacier Snowline Tool
 
+The following provides a step by walkthrough of the Glacier Snowline Tool and demonstrates its functions. If you have never used Google Earth Engine before you will need to create a Google Earth Engine account and register for a non-commercial cloud project before you are able to access the tool. This will include answering a few questions to ensure you qualify (all research and education purposes are covered), and you will only need to this the first time you use Google Earth Engine. Use of the Glacier Snowline tool is not permitted for commerical purposes, please contact the authors if you are a user who wants to proceed under commercial purposes. 
 
