@@ -25,6 +25,29 @@ The Glacier Snowline Tool loads with a panel on the left to enable the user to a
 
 ![image](images/collectImagery.png)
 
+## Step3: Choose Parameters for Image Analysis - DEM
+
+After the user has completed the imagery selection, they will be asked to choose a DEM source under the 'Processing Options' panel. This is available via a dropdown menu with the DEM options including version 4 of ArcticDEM and the COPDEM for global coverage. In the event of ArcticDEM being selected for a glacier not within the bounds of the DEM an error message will print in the console. Conversely, confirmation will print in the console if the DEM chosen covers the selected glacier. See below for an example of a non Arctic located glacier where ArcticDEM was intially chosen.
+
+![image]
+
+
+
+
+
+
+
+## Step 4: Choose Parameters for Image Analysis - Masking Strength
+
+The masking selection uses a technique to remove surrounding bedrock and water with a thermal band to blue band ratio and a threshold of the blue band [Mousssavi et al., 2020](https://www.mdpi.com/2072-4292/12/1/134). The user has the option to choose a 'light', 'normal', or 'aggresive' mask, or turn it off completely. The threshold ratios for each of these thresholds are as follows: light (thermal/blue >0.9 & blue <0.1), normal (thermal/blue >0.9 & blue <0.2), and aggressive (thermal/blue >0.85 & blue <0.2). When chosen, the respective ratio will print on the console, of if turned off, the console will print 'Masking Disabled.'
+
+![image]
+
+## Step 5: Run Analysis
+
+After all the above parameters are selected, the user is able to select the 'Run Analysis' button to complete the snowline assessment and gather yearly health metrics for the selected glacier. The map will display the first image analyzed with the snow cover (light green) and total area (blue) as filled polygons. The console will print a sample of one year's results with all the calculated variables and their respective uncertainty errors, the total amount of images analyzed, and a note that the analysis is complete. 
+
+![image]
 
 
 
