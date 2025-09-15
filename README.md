@@ -39,9 +39,19 @@ The masking selection uses a technique to remove surrounding bedrock and water w
 
 ## Step 5: Run Analysis
 
-After all the above parameters are selected, the user is able to select the 'Run Analysis' button to complete the snowline assessment and gather yearly health metrics for the selected glacier. The map will display the first image analyzed with the snow cover (light green) and total area (blue) as filled polygons. The console will print a sample of one year's results with all the calculated variables and their respective uncertainty errors, the total amount of images analyzed, and a note that the analysis is complete. 
+After all the above parameters are selected, the user is able to select the 'Run Analysis' button to complete the snowline assessment and gather yearly health metrics for the selected glacier. The map will display the first image analyzed with the snow cover (light green) and total area (blue) as filled polygons. The console will print a sample of one year's results with all the calculated variables and their respective uncertainty errors, the total amount of images analyzed, and a note that the analysis is complete. If the user goes back to Steps 3&4 and changes parameters to re-run the analysis, the map will clear with each run but the console will continue to print underneath each new selection/output. 
 
 ![image](images/runAnalysis.png)
+
+## Step 6: Export Results
+
+Once the use is statisfied with the analysis results, the final step is to export the results. The Glacier Snowline Tool generates four exports including a csv file with all the imagery information, the calculated yearly health metrics and uncertainty error, a csv file of the snow cover area binned into 50 meter elevation bins, and yearly shapefiles of the snow cover and total area. To initiate these exports, select the 'Tasks' tab (right of the 'Console' tab) and click the 'Run' button next to one of the tasks. The user will be prompted with an export window that will preset the file name and google drive destination folder. These parameters are editable if the user so chooses. 
+
+![image](images/exportTask.png)
+
+Select the 'Run' button to begin the export and the task will appear under 'Submitted Tasks' in the console. Depending on the size of the file (especially the shapefiles) the task will display an approximate completion time with a loading circle until it is completed. Once completed, the tasks will change from a grey fill to a blue fill and the files will be available in their respective GoogleDrive folders. See below for two completed tasks and two tasks still running.
+
+![image](images/taskCompleted.png)
 
 
 
