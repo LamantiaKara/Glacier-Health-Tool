@@ -11,4 +11,4 @@ The following provides a step by walkthrough of the Glacier Snowline Tool and de
 
 The Glacier Snowline Tool runs through Google Earth Engine using JavaScript API. To access the tool click [here](https://code.earthengine.google.com/693c4d3f153208fbe5ea13255247e190). Once opened, a welcome page will appear as shown below. 
 
-![image]
+![image](images/welcomeScreen.png)
