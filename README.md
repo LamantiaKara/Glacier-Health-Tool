@@ -13,11 +13,18 @@ The Glacier Snowline Tool runs through Google Earth Engine using JavaScript API.
 
 ![image](images/welcomeScreen.png)
 
-## Step 1 Select a Glacier ROI
+## Step 1: Select a Glacier ROI
 
-Once the preferred dataset is loaded, the user can toggle between the map or satellite layers as the basemap to zoom into their general area of interest. The Glacier Snowline Tool is set up for a 'point and click' selection where the use needs to use the mouse pointer to click within the glacier outline. The tool will then select the outline, reload only the selected outline, display it in red, set it as the ROI with a 100 meter buffer, and the console will print the RGI ID number.
+Once the preferred dataset is loaded the console will print the dataset select and the user will be able to toggle between the map or satellite layers as the basemap to zoom into their general area of interest. The Glacier Snowline Tool is set up for a 'point and click' selection where the use needs to use the mouse pointer to click within the glacier outline. The tool will then select the outline, reload only the selected outline, display it in red, set it as the ROI with a 100 meter buffer, and the console will print the RGI ID number.
 
 ![image](images/selectGlacier.png)
+
+## Step 2: Set Parameters for Imagery Collection
+
+The Glacier Snowline Tool loads with a panel on the left to enable the user to adjust parameters for imagery selection. You will be prompted to enter a glacier name for file export purposes. The other parameters are purely for imagery collection including start and end year, target month of interest, cloud cover, and minimum sun angle. Once selected, the user can click the 'Collect Imagery' button and the Glacier Snowline Tool will display the first image collected in RGB as well as printing out how many total images fit the criteria, the final yearly images selected, and a list of cloud cover percentages for each year (see below). the user is able to adjust and re-run the 'Collect Imagery' process as many times as needed until they are pleased with their selection. 
+
+![image](
+
 
 
 
