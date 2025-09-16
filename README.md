@@ -9,7 +9,7 @@ The following provides a step by walkthrough of the Glacier Snowline Tool and de
 
 ## Getting Started
 
-The Glacier Snowline Tool runs through Google Earth Engine using JavaScript API. To access the tool click [here](https://code.earthengine.google.com/693c4d3f153208fbe5ea13255247e190). Once opened, a welcome page will appear as shown below, prompting you to select either the RGI Glacier outlines or the RGI Complex Outlines. You will need to click on your preferred dataset, and it will load it into the tool.
+The Glacier Snowline Tool runs through Google Earth Engine using JavaScript API. To access the tool click [here](https://code.earthengine.google.com/3dc8385812f74001207dc0d3d171fb1f). Once opened, a welcome page will appear as shown below, prompting you to select either the RGI Glacier outlines or the RGI Complex Outlines. You will need to click on your preferred dataset, and it will load it into the tool.
 
 ![image](https://github.com/LamantiaKara/Glacier-Snowline-Tool/blob/main/images/welcomeScreen.png?raw=true)
 
