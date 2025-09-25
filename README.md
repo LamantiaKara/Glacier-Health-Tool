@@ -47,7 +47,7 @@ After all the above parameters are selected, your next step is to click the 'Run
 
 Once you have obtained the analysis results, the final step is to export all data. The Glacier Snowline Tool generates four export tasks including 1) a csv file with all the imagery information, the calculated yearly health metrics, and uncertainty error, 2) a csv file of the snow cover area binned into 50 meter elevation bins, and 3) yearly shapefiles of the snow cover and 4) total area. To initiate these exports, select the 'Tasks' tab (right of the 'Console' tab) and click the 'Run' button next to one of the tasks. 
 
-![image]
+![image](https://github.com/LamantiaKara/Glacier-Snowline-Tool/blob/main/images/exportTasks.png?raw=true)
 
 You will be prompted with an export window that will preset the file name and google drive destination folder. These parameters are editable in the export window if you would like to change the file or folder names. 
 
