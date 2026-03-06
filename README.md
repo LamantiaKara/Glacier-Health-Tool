@@ -11,7 +11,7 @@ The following provides a step by walkthrough of the Glacier Health Tool and demo
 
 The Glacier Health Tool runs through Google Earth Engine using JavaScript API. To access the tool click [here](https://code.earthengine.google.com/3dc8385812f74001207dc0d3d171fb1f). Once opened, a welcome page will appear as shown below, prompting you to select either the RGI version 7 Glacier outlines or the RGI version 7 Complex Outlines. You will need to click on your preferred dataset, and it will load it into the tool.
 
-![image](https://github.com/LamantiaKara/Glacier-Snowline-Tool/blob/main/images/welcomeScreen.png?raw=true)
+![image](https://github.com/LamantiaKara/Glacier-Health-Tool/blob/main/images/welcomeScreen.png?raw=true)
 
 ## Step 2: Select a Glacier ROI
 
