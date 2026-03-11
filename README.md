@@ -3,7 +3,7 @@
 
 ## To use this tool click [here](https://code.earthengine.google.com/7f4aa583362aff4c1677c8c4ec19469e).
 
-The Glacier Health Tool is a Google Earth Engine Tool for assessing yearly glacier health metrics (total area, snow covered area, snowline elevation, and accumulation area ratio) from Landsat imagery. More details on the tools, its structure, and validation can be found in the associated paper (XXXXX). 
+The Glacier Health Tool is a Google Earth Engine tool for assessing yearly glacier health metrics (total area, snow-covered area, snowline elevation, and accumulation area ratio) derived from Landsat imagery. More details about the tool, its structure, and its validation can be found in the associated paper (XXXXX). 
 
 ## How to use the Glacier Health Tool
 
@@ -11,7 +11,7 @@ The following provides a step by step walkthrough of the Glacier Health Tool and
 
 ## Getting Started - Step 1: Choose a Dataset
 
-The Glacier Health Tool runs through Google Earth Engine using JavaScript API. To access the tool click [here](https://code.earthengine.google.com/7f4aa583362aff4c1677c8c4ec19469e). Once opened, a welcome page will appear as shown below, prompting you to select either the RGI version 7 Glacier outlines or the RGI version 7 Complex Outlines. You will need to click on your preferred dataset, and it will load it into the tool's map view.
+The Glacier Health Tool runs through Google Earth Engine using JavaScript API. To access the tool click [here](https://code.earthengine.google.com/7f4aa583362aff4c1677c8c4ec19469e). Once opened, a welcome page will appear as shown below, prompting you to select either the RGI glacier product or the RGI glacier complex product (RGI v7.0). You will need to click on your preferred dataset, and it will load it into the tool's map view.
 
 ![image](https://github.com/LamantiaKara/Glacier-Health-Tool/blob/main/images/welcomeScreen.png?raw=true)
 
@@ -23,25 +23,29 @@ Once the preferred dataset is loaded the console will print the dataset selected
 
 ## Step 3: Set Parameters for Imagery Collection
 
-The Glacier Health Tool loads with a panel on the left to enable the user to adjust parameters for imagery selection. You will be prompted to enter a glacier name for file export purposes. The other parameters are to set preferences for imagery collection including start and end year, target month of interest, cloud cover, and minimum sun angle. Once selected, you will be able to click the 'Collect Imagery' button and the Glacier Health Tool will display the first image collected in RGB as well as printing out how many total images fit the criteria, the final yearly images selected, and a list of cloud cover percentages for each year (see below). You can adjust the parameters and re-run 'Collect Imagery' process as many times as needed until you are confident your selection is satisfactory. 
+The Glacier Health Tool loads with a panel on the left to enable the user to adjust parameters for imagery selection. You will be prompted to enter a glacier name for file export purposes. The other parameters are to set preferences for imagery collection including start and end year, target month of interest, cloud cover, and minimum sun angle. Once selected, you will be able to click the 'Collect Imagery' button and the Glacier Health Tool will display the first image collected in RGB and print the total number of images that meet the criteria, the final yearly images selected, and a list of cloud cover percentages for each year (see below). You can adjust the parameters and re-run 'Collect Imagery' process as many times as needed until you are confident your selection is satisfactory. 
 
 ![image](https://github.com/LamantiaKara/Glacier-Health-Tool/blob/main/images/collectImagery.png?raw=true)
 
 ## Step 4: Choose Parameters for Image Analysis - DEM
 
-After you have completed the imagery selection, you will need to choose a Digital Elevation Model (DEM) source under the 'Processing Options' panel. This is available via a dropdown menu with the DEM options including ArcticDEM version 4 and the 30m COPDEM for global coverage. In the event ArcticDEM is selected for a glacier not within the bounds of the DEM, an error message will print in the console altering the user this DEM does not cover the selected glacier. Conversely, confirmation will print in the console if the DEM chosen covers the selected glacier. See below for an example of a non Arctic located glacier where ArcticDEM was intially chosen and then corrected to COPDEM.
+After you have completed the imagery selection, you will need to choose a Digital Elevation Model (DEM) source under the 'Processing Options' panel. This is available via a dropdown menu with the DEM options including ArcticDEM version 4 and the 30m COPDEM for global coverage. In the event ArcticDEM is selected for a glacier not within the bounds of the DEM, an error message will print in the console alerting the user that this DEM does not cover the selected glacier. Conversely, confirmation will print in the console if the DEM chosen covers the selected glacier. See below for an example of a non Arctic located glacier where ArcticDEM was intially chosen and then corrected to COPDEM.
 
 ![image](https://github.com/LamantiaKara/Glacier-Health-Tool/blob/main/images/selectDEM.png?raw=true)
 
 ## Step 5: Choose Parameters for Image Analysis - Masking Strength
 
-The next step involves the masking selection, which uses a technique to remove surrounding bedrock and water with a thermal band to blue band ratio and a threshold of the blue band [Mousssavi et al., 2020](https://www.mdpi.com/2072-4292/12/1/134). You have the option to choose a 'light', 'moderate', or 'high' mask, or turn it off completely. The thresholds for each of these are as follows: light (thermal/blue >0.9 & blue <0.1), moderate (thermal/blue >0.9 & blue <0.2), and high (thermal/blue >0.85 & blue <0.2). When chosen, the respective ratio will print on the console, of if turned off, the console will print 'Masking Disabled.' See below for an example where 'Moderate' was initially chosen, and then the masking was turned off.
+The next step involves the masking selection, which removes surrounding bedrock and water so the analysis is focused only on snow and ice. This is accomplished with ratios and thresholds of the thermal and blue band, following the approach documented in [Mousssavi et al., 2020](https://www.mdpi.com/2072-4292/12/1/134). You can choose a 'light', 'moderate', or 'high' mask, or turn it off entirely. This option will control how aggressively non-ice areas are removed. The thresholds used are:
+      - Light (thermal/blue >0.9 & blue <0.1)
+      - Moderate (thermal/blue >0.9 & blue <0.2)
+      - High (thermal/blue >0.85 & blue <0.2)
+When a mask is chosen, the respective thresholds will print on the console. If turned off, the console will print 'Masking Disabled.' See below for an example where 'Moderate' was initially chosen, and then the masking was turned off.
 
 ![image](https://github.com/LamantiaKara/Glacier-Health-Tool/blob/main/images/selectMask.png?raw=true)
 
 ## Step 6: Run Analysis
 
-After all the above parameters are selected, click the 'Run Analysis' button to produce the yearly health metrics for your selected glacier. The map will display the first image analyzed with the snow cover (light green) and total area (blue) as filled polygons. The console will print the first analyzed year's results with all the calculated variables, uncertainties (in ± percent), the total amount of images analyzed, and a note that the analysis is complete. If the user goes back to Steps 3-5 and changes parameters to re-run the analysis, the map will clear with each run but the console will continue to print underneath each new output. If the user wants to change DEM or masking options, Run Analysis can be run as many times as the user prefers, similar to Collect Imagery.
+After all the above parameters are selected, click the 'Run Analysis' button to produce the yearly health metrics for your selected glacier. The map will display the first image analyzed with the snow cover (light green) and total area (blue) as filled polygons. The console will print the results for the first analyzed year, including all calculated variables, uncertainties (reported in the relevant units but derived from fixed percentages), the total number of images analyzed, and a note indicating the analysis is complete. If the user goes back to Steps 3-5 and changes parameters to re-run the analysis, the map will clear with each run but the console will continue to print underneath each new output. If the user wants to change DEM or masking options, Run Analysis can be run as many times as the user prefers, similar to Collect Imagery.
 
 ![image](https://github.com/LamantiaKara/Glacier-Health-Tool/blob/main/images/runAnalysis.png?raw=true)
 
@@ -59,7 +63,7 @@ Select the 'Run' button to begin the export and the task will appear under 'Subm
 
 ![image](https://github.com/LamantiaKara/Glacier-Health-Tool/blob/main/images/taskCompleted.png?raw=true)
 
-After all the tasks haved finished, this means you are done! You have completed all the steps to acquiring your yearly snowline data from the Glacier Health Tool. 
+Once all taks have finished, the process is complete. You have successfully acquired the yearly glacier health metrics generated by the Glacier Health Tool. 
 
 ## Acknowledgements
 
