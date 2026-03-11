@@ -29,7 +29,7 @@ The Glacier Health Tool loads with a panel on the left to enable the user to adj
 
 ## Step 4: Choose Parameters for Image Analysis - DEM
 
-After you have completed the imagery selection, you will need to choose a DEM source under the 'Processing Options' panel. This is available via a dropdown menu with the DEM options including ArcticDEM version 4 and the 30m COPDEM for global coverage. In the event ArcticDEM is selected for a glacier not within the bounds of the DEM, an error message will print in the console altering the user this DEM does not cover the selected glacier. Conversely, confirmation will print in the console if the DEM chosen covers the selected glacier. See below for an example of a non Arctic located glacier where ArcticDEM was intially chosen and then corrected to COPDEM.
+After you have completed the imagery selection, you will need to choose a Digital Elevation Model (DEM) source under the 'Processing Options' panel. This is available via a dropdown menu with the DEM options including ArcticDEM version 4 and the 30m COPDEM for global coverage. In the event ArcticDEM is selected for a glacier not within the bounds of the DEM, an error message will print in the console altering the user this DEM does not cover the selected glacier. Conversely, confirmation will print in the console if the DEM chosen covers the selected glacier. See below for an example of a non Arctic located glacier where ArcticDEM was intially chosen and then corrected to COPDEM.
 
 ![image](https://github.com/LamantiaKara/Glacier-Health-Tool/blob/main/images/selectDEM.png?raw=true)
 
