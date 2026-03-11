@@ -9,7 +9,7 @@ The following provides a step by step walkthrough of the Glacier Health Tool and
 
 ## Getting Started - Step 1: Choose a Dataset
 
-The Glacier Health Tool runs through Google Earth Engine using JavaScript API. To access the tool click [here](https://code.earthengine.google.com/ec46d4ab10adb6926c7e3acd1ba97f3d). Once opened, a welcome page will appear as shown below, prompting you to select either the RGI version 7 Glacier outlines or the RGI version 7 Complex Outlines. You will need to click on your preferred dataset, and it will load it into the tool's map view.
+The Glacier Health Tool runs through Google Earth Engine using JavaScript API. To access the tool click [here](https://code.earthengine.google.com/79ea98154ddb994be52258ac4a764edc). Once opened, a welcome page will appear as shown below, prompting you to select either the RGI version 7 Glacier outlines or the RGI version 7 Complex Outlines. You will need to click on your preferred dataset, and it will load it into the tool's map view.
 
 ![image](https://github.com/LamantiaKara/Glacier-Health-Tool/blob/main/images/welcomeScreen.png?raw=true)
 
@@ -33,7 +33,7 @@ After you have completed the imagery selection, you will need to choose a DEM so
 
 ## Step 5: Choose Parameters for Image Analysis - Masking Strength
 
-The next step involves the masking selection, which uses a technique to remove surrounding bedrock and water with a thermal band to blue band ratio and a threshold of the blue band [Mousssavi et al., 2020](https://www.mdpi.com/2072-4292/12/1/134). You have the option to choose a 'low', 'moderate', or 'high' mask, or turn it off completely. The thresholds for each of these are as follows: low (thermal/blue >0.9 & blue <0.1), moderate (thermal/blue >0.9 & blue <0.2), and high (thermal/blue >0.85 & blue <0.2). When chosen, the respective ratio will print on the console, of if turned off, the console will print 'Masking Disabled.' See below for an example where 'Moderate' was initially chosen, and then the masking was turned off.
+The next step involves the masking selection, which uses a technique to remove surrounding bedrock and water with a thermal band to blue band ratio and a threshold of the blue band [Mousssavi et al., 2020](https://www.mdpi.com/2072-4292/12/1/134). You have the option to choose a 'light', 'moderate', or 'high' mask, or turn it off completely. The thresholds for each of these are as follows: light (thermal/blue >0.9 & blue <0.1), moderate (thermal/blue >0.9 & blue <0.2), and high (thermal/blue >0.85 & blue <0.2). When chosen, the respective ratio will print on the console, of if turned off, the console will print 'Masking Disabled.' See below for an example where 'Moderate' was initially chosen, and then the masking was turned off.
 
 ![image](https://github.com/LamantiaKara/Glacier-Health-Tool/blob/main/images/selectMask.png?raw=true)
 
