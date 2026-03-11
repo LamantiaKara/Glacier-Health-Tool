@@ -1,7 +1,7 @@
 # Glacier-Health-Tool
 **If you use this tool please cite XXXXX**
 
-## To use this tool click [here](https://code.earthengine.google.com/22c662a8191324af4b042a01fcd9fd00).
+## To use this tool click [here](https://code.earthengine.google.com/7f4aa583362aff4c1677c8c4ec19469e).
 
 The Glacier Health Tool is a Google Earth Engine Tool for assessing yearly glacier health metrics (total area, snow covered area, snowline elevation, and accumulation area ratio) from Landsat imagery. More details on the tools, its structure, and validation can be found in the associated paper (XXXXX). 
 
@@ -11,7 +11,7 @@ The following provides a step by step walkthrough of the Glacier Health Tool and
 
 ## Getting Started - Step 1: Choose a Dataset
 
-The Glacier Health Tool runs through Google Earth Engine using JavaScript API. To access the tool click [here](https://code.earthengine.google.com/22c662a8191324af4b042a01fcd9fd00). Once opened, a welcome page will appear as shown below, prompting you to select either the RGI version 7 Glacier outlines or the RGI version 7 Complex Outlines. You will need to click on your preferred dataset, and it will load it into the tool's map view.
+The Glacier Health Tool runs through Google Earth Engine using JavaScript API. To access the tool click [here](https://code.earthengine.google.com/7f4aa583362aff4c1677c8c4ec19469e). Once opened, a welcome page will appear as shown below, prompting you to select either the RGI version 7 Glacier outlines or the RGI version 7 Complex Outlines. You will need to click on your preferred dataset, and it will load it into the tool's map view.
 
 ![image](https://github.com/LamantiaKara/Glacier-Health-Tool/blob/main/images/welcomeScreen.png?raw=true)
 
