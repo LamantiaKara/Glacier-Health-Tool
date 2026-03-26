@@ -15,9 +15,9 @@ The Glacier Health Tool runs through Google Earth Engine using JavaScript API. T
 
 ![image](https://github.com/LamantiaKara/Glacier-Health-Tool/blob/main/images/welcomeScreen.png?raw=true)
 
-## Step 2: Select a Glacier ROI
+## Step 2: Select a Glacier ROI and Set a Buffer
 
-Once the preferred dataset is loaded the console will print the dataset selected and you will be able to toggle between the map or satellite layers as the basemap to zoom into your area of interest. The Glacier Health Tool is set up for a 'point and click' selection where you will use the mouse pointer to click within the glacier outline. The tool will then select the chosen glacier, reload only its selected outline, display it in red, and set it as the ROI with a 50 meter buffer. The console will print the RGI ID number.
+Once the preferred dataset is loaded the console will print the dataset selected and you will be able to toggle between the map or satellite layers as the basemap to zoom into your area of interest. The Glacier Health Tool is set up for a 'point and click' selection where you will use the mouse pointer to click within the glacier outline. The tool will then select the chosen glacier RGI outline, print the RGI ID number in the console, and display a default 50 m buffer in red. At the bottom right of the screen, the allows for the user to toggle the buffer, in 50 m increments from 0 to 200 m. If changed, the map will reload and display the buffer with the original RGI outline. The buffer will not include any nearby RGI outlines to avoid overlap in highly glaciated areas.
 
 ![image](https://github.com/LamantiaKara/Glacier-Health-Tool/blob/main/images/selectGlacier.png?raw=true)
 
