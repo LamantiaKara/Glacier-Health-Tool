@@ -1,9 +1,9 @@
 # Glacier-Health-Tool
-**If you use this tool please cite XXXXX**
+**If you use this tool please cite [our preprint here](https://eartharxiv.org/repository/view/12615/)**
 
 ## To use this tool click [here](https://code.earthengine.google.com/a06a61e63c9dc0615ec8e823628e24e0).
 
-The Glacier Health Tool is a Google Earth Engine tool for assessing yearly glacier health metrics (total area, snow-covered area, snowline elevation, and accumulation area ratio) derived from Landsat imagery. More details about the tool, its structure, and its validation can be found in the associated paper (XXXXX). 
+The Glacier Health Tool is a Google Earth Engine tool for assessing yearly glacier health metrics (total area, snow-covered area, snowline elevation, and accumulation area ratio) derived from Landsat imagery. More details about the tool, its structure, and its validation can be found in the [associated preprint](https://eartharxiv.org/repository/view/12615/). 
 
 ## How to use the Glacier Health Tool
 
