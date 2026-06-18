@@ -1,0 +1,1055 @@
+//Glacier Health Tool
+//Copyright (c) 2026 Kara Lamantia 
+
+//This work is licensed under the Creative Commons
+//Attribution-NonCommercial-ShareAlike 4.0 International License. 
+
+//You may share and adapt this work for non-commercial purposes,
+//provided appropriate credit is given and derivative works are
+//distributed under the same license.
+
+//License: https://creativecommons.org/licenses/by-nc-sa/4.0/
+//Email: kara.lamantia@bristol.ac.uk
+ 
+//This tool is designed to analyzed one image per year 
+//and output key glacier health metrics of the
+//selected glacier, from either RGI Glacier or Complex outlines
+
+var RGI_C = ee.FeatureCollection("projects/ee-lamantiakara/assets/RGI2000-v7-C")
+var RGI_G = ee.FeatureCollection("projects/ee-lamantiakara/assets/RGI2000-v7-G") 
+var RGI = null;
+var selectedGlacierRaw = null;
+var selectedGlacierGlobal = null;
+var roi_buffer = 50; //default
+var imageryMode = false;
+
+//Datset selection first panel, Step 1
+function selectDataset(dataset, name) {
+  RGI = dataset;
+  Map.layers().reset();
+  Map.addLayer(RGI, {}, name);
+  Map.remove(welcomePopup);
+  Map.add(glacierPrompt)
+  Map.add(bufferPanel);
+  print('Selected Dataset:', name);
+}
+var option1 = ui.Button({
+  label: 'Use RGI Glacier Outlines',
+  onClick: function() { selectDataset(RGI_G, 'RGI Version 7.0 Glacier Outlines'); },
+  style: {stretch: 'horizontal'}
+});
+
+var option2 = ui.Button({
+  label: 'Use RGI Complex Outlines',
+  onClick: function() { selectDataset(RGI_C, 'RGI Version 7.0 Complex Outlines'); },
+  style: {stretch: 'horizontal'}
+});
+var welcomeLabel = ui.Label({
+  value: 'Welcome! Step 1: Please Choose One RGI Dataset for Glacier Outlines:',
+  style: {fontWeight: 'bold', fontSize: '18px', 
+  color: 'red', textAlign: 'center'}
+});
+var welcomePopup = ui.Panel({
+  widgets: [welcomeLabel, option1, option2],
+  layout: ui.Panel.Layout.flow('vertical'),
+  style: {
+    position: 'top-center',
+    width: '400px',
+    height: '170px',
+    padding: '10px',
+    backgroundColor: 'white',
+    border: '2px solid black',
+    borderRadius: '6px',
+    textAlign: 'center'
+  }
+});
+
+Map.setCenter(0,30,2)
+Map.add(welcomePopup);
+Map.style().set('cursor', 'crosshair')
+
+//Step 2 prompt select a glacier panel
+var glacierPrompt = ui.Panel({
+  widgets: [
+    ui.Label({
+      value: 'Step 2: Click on a Glacier to Select it, then Choose a Buffer.',
+      style: {
+        fontWeight: 'bold',
+        fontSize: '18px',
+        color: 'blue',
+        textAlign: 'center'
+      }
+    })
+  ],
+  style: {
+    position: 'top-center',
+    width: '280px',
+    padding: '5px',
+    backgroundColor: 'white',
+    border: '2px solid blue',
+    borderRadius: '4px',
+    textAlign: 'center'
+  }
+});
+//buffer slider and panel
+var bufferSlider = ui.Slider({
+  min: 0,
+  max: 200,
+  value: 50,
+  step: 50,
+  style: {width: '150px'}
+});
+
+var bufferValueLabel = ui.Label('50 m', {
+  textAlign: 'center',
+  stretch: 'horizontal'
+});
+
+bufferSlider.onChange(function(value) {
+  roi_buffer = value;
+  if (value === 0){
+    bufferValueLabel.setValue('RGI Outline Only');
+  } else {
+  bufferValueLabel.setValue(value + ' m');
+  }
+  updateBufferedGlacier();
+});
+
+var bufferPanel = ui.Panel({
+  widgets: [
+    ui.Label({
+      value: 'Buffer Distance (m)',
+      style: {
+        fontWeight: 'bold',
+        textAlign: 'center',
+        stretch: 'horizontal'
+      }
+    }),
+    bufferSlider,
+    bufferValueLabel
+  ],
+  layout: ui.Panel.Layout.flow('vertical'),
+  style: {
+    position: 'bottom-right',
+    width: '170px',
+    padding: '4px',
+    backgroundColor: 'white',
+    border: '2px solid black',
+    borderRadius: '4px',
+    textAlign: 'center'
+  }
+});
+
+// Status panel
+var statusLabel = ui.Label({
+  value: 'Step 2 Complete: Glacier Selected. \nStep 3: Set Imagery Preferences.',
+  style: {
+    fontWeight: 'bold',
+    color: 'blue',
+    fontSize: '14px',
+    margin: '2px',
+    whiteSpace: 'pre-wrap',
+    textAlign: 'center'
+  }
+});
+var statusPanel = ui.Panel({
+  widgets: [statusLabel],
+  style: {
+    position: 'top-center',
+    padding: '6px',
+    backgroundColor: 'white',
+    border: '1px solid blue',
+    borderRadius: '2px', 
+    textAlign: 'center'
+  }
+});
+
+//Error catch
+var panelCatch=ui.Panel({style:{position:'top-right'}})
+var labelCatch=ui.Label({value:'No glacier selected. Try again!',
+                         style:{fontWeight:'bold',color: 'red',
+                                fontSize:'18px'}
+                        })
+panelCatch.add(labelCatch)
+
+//update buffer if slider is moved
+function updateBufferedGlacier() {
+  if (!selectedGlacierRaw) return;
+  var geom;
+  if (roi_buffer === 0){
+    geom = selectedGlacierRaw.geometry();
+  } else {
+    var buffered =selectedGlacierRaw.geometry().buffer(roi_buffer);
+    var searchArea = selectedGlacierRaw.geometry().buffer(roi_buffer + 50);
+    var nearbyGlaciers = RGI.filterBounds(searchArea)
+                            .filter(ee.Filter.neq('rgi_id', selectedGlacierRaw.get('rgi_id')));
+    geom = buffered.difference(nearbyGlaciers.geometry(), 1)   
+  }
+
+  selectedGlacierGlobal = ee.FeatureCollection([
+    ee.Feature(geom, selectedGlacierRaw.toDictionary())
+  ]);
+
+  Map.layers().reset();
+  Map.centerObject(selectedGlacierGlobal);
+  if (!imageryMode){
+    Map.addLayer(RGI, {}, 'RGI')
+  }
+  Map.addLayer(selectedGlacierGlobal, {color: 'red'}, 'Buffered');
+}
+//Side Panels
+var leftPanel = ui.Panel({
+  layout: ui.Panel.Layout.flow('vertical'),
+  style: {width: '200px', position: 'bottom-left'}
+});
+var rightPanel = ui.Panel({
+  layout: ui.Panel.Layout.flow('vertical'),
+  style: {width: '200px', position: 'bottom-right'}
+});
+ui.root.insert(0, leftPanel);
+ui.root.insert(1, rightPanel);
+
+//global variables
+var combine_glaciers;
+var roi;
+var CollectedImages;
+
+//Panel Content
+leftPanel.add(ui.Label({
+  value: 'Collect Imagery',
+  style: {fontWeight: 'bold', fontSize: '16px', margin: '2px 2px'}
+}));
+
+var glacierNameInput = ui.Textbox({
+  placeholder: 'Glacier name for export',
+  value: '',
+  onChange: function(value) {
+    glaciername = value;
+  }
+});
+leftPanel.add(ui.Label('Glacier Name'));
+leftPanel.add(glacierNameInput);
+var yearNow = new Date().getFullYear();
+var startYear = 1985;
+var endYear = yearNow;
+
+var startYearSlider = ui.Slider({
+  min: 1985, max: yearNow, value: startYear, step: 1,
+  onChange: function(value) {
+    if (value > endYearSlider.getValue()) {
+      // Prevent start year > end year
+      startYearSlider.setValue(endYearSlider.getValue());
+      startYear = endYearSlider.getValue();
+    } else {
+      startYear = value;
+    }
+  },
+  style: {stretch: 'horizontal'}
+});
+leftPanel.add(ui.Label('Start Year'));
+leftPanel.add(startYearSlider);
+
+var endYearSlider = ui.Slider({
+  min: 1985, max: yearNow, value: endYear, step: 1,
+  onChange: function(value) {
+    if (value < startYearSlider.getValue()) {
+      endYearSlider.setValue(startYearSlider.getValue());
+      endYear = startYearSlider.getValue();
+    } else {
+      endYear = value;
+    }
+  },
+  style: {stretch: 'horizontal'}
+});
+leftPanel.add(ui.Label('End Year'));
+leftPanel.add(endYearSlider);
+
+var monthSlider = ui.Slider({
+  min: 1, max: 12, value: 8, step: 1,
+  onChange: function(value) { targetMonth = value; },
+  style: {stretch: 'horizontal'}
+});
+leftPanel.add(ui.Label('Target Month (1–12)'));
+leftPanel.add(monthSlider);
+
+var cloudSlider = ui.Slider({
+  min: 0,
+  max: 100,
+  value: 20,
+  step: 5,
+  onChange: function(value) {
+    cloudcover = value;
+  },
+  style: {stretch: 'horizontal'}
+});
+leftPanel.add(ui.Label('Max Cloud Cover (%)'));
+leftPanel.add(cloudSlider);
+
+var sunSlider = ui.Slider({
+  min: 0,
+  max: 90,
+  value: 20,
+  step: 5,
+  onChange: function(value){
+    minSunAngle = value;
+  },
+  style: {stretch: 'horizontal'}
+});
+leftPanel.add(ui.Label('Min Sun Angle \n(degrees)'));
+leftPanel.add(sunSlider);
+
+var glaciername = glacierNameInput.getValue();
+var startYear = startYearSlider.getValue();
+var endYear = endYearSlider.getValue();
+var targetMonth = monthSlider.getValue();
+var cloudcover = cloudSlider.getValue();
+var minSunAngle = sunSlider.getValue();
+              
+//common band naming
+var commonBands = ['blue', 'green', 'red', 'NIR', 'SWIR1', 'SWIR2', 'thermal']
+var renameLS5_7 = ['SR_B1', 'SR_B2','SR_B3', 'SR_B4','SR_B5', 'SR_B7', 'ST_B6']
+var renameLS8_9 = ['SR_B2', 'SR_B3','SR_B4', 'SR_B5','SR_B6', 'SR_B7', 'ST_B10']
+
+//imagery collection
+function harmonizeLandsat(image, satellite, roi, roiMaskImage){
+  var optical, thermal;
+  if (satellite == 'LS5_7'){
+    optical = image.select(renameLS5_7.slice(0,6)).multiply(0.0000275).add(-0.2)
+                   .rename(commonBands.slice(0,6));
+    thermal = image.select('ST_B6').multiply(0.00341802).add(149.0).rename('thermal');
+  } else if (satellite =='LS8_9'){
+    optical = image.select(renameLS8_9.slice(0,6)).multiply(0.0000275).add(-0.2)
+                   .rename(commonBands.slice(0,6));
+    thermal = image.select('ST_B10').multiply(0.00341802).add(149.0).rename('thermal');
+  }
+  optical = optical.max(0);
+
+  var combined = optical.addBands(thermal).updateMask(roiMaskImage);
+//cloud fraction from QA PIXEL band
+  var cloudBit = image.select('QA_PIXEL').bitwiseAnd(1<<3).neq(0)// 1 is high confidence of cloud
+                      .updateMask(roiMaskImage).rename('cloud');
+
+  var nanBand = combined.select(['blue','green','red','NIR','SWIR1','SWIR2'])
+                    .mask().reduce(ee.Reducer.min()).rename('valid');
+  var stats = nanBand.addBands(cloudBit).reduceRegion({
+    reducer: ee.Reducer.mean().setOutputs(['valid'])
+    .combine({reducer2: ee.Reducer.mean().setOutputs(['cloud']),
+     sharedInputs: false
+  }),
+    geometry:roi,
+    scale: 30, 
+    maxPixels: 1e13
+  });
+  var coverage = ee.Number(ee.Algorithms.If(stats.get('valid'), stats.get('valid'), 0));
+  var cloudFraction = ee.Number(ee.Algorithms.If(stats.get('cloud'),
+            stats.get('cloud'), 0)).multiply(100); //percent of roi with cloud flags
+  return combined.set('roi_coverage', coverage)
+                 .set('cloud_pct_roi', cloudFraction)
+                 .copyProperties(image, ['system:time_start', 'system:index', 'system:id',
+                 'LANDSAT_PRODUCT_ID', 'DATE_ACQUIRED', 'SUN_ELEVATION', 
+                 'SUN_AZIMUTH', 'CLOUD_COVER_LAND', 'LANDSAT_SCENE_ID', 'SPACECRAFT_ID'])
+                 .set('month', ee.Date(image.get('system:time_start')).get('month'));
+}
+var coverage_min = 0.90
+
+Map.onClick(function(coords) {
+  var point = ee.Geometry.Point([coords.lon, coords.lat]);
+  var filteredColl = RGI.filterBounds(point);
+
+  filteredColl.size().evaluate(function(number) {
+    if (number > 0) {
+      Map.remove(glacierPrompt)
+      Map.remove(panelCatch);
+      Map.add(statusPanel)
+      var selectedGlacier = ee.Feature(filteredColl.first());
+      selectedGlacierRaw = selectedGlacier;
+
+      selectedGlacier.get('rgi_id').evaluate(function(id){
+        print('Selected Glacier RGI ID:', id);
+      });
+      updateBufferedGlacier();
+
+    } else {
+      Map.remove(panelCatch)
+      Map.add(panelCatch);
+    }
+  });
+});
+
+//get imagery
+var CollectedImages;
+var getImages = ui.Button({
+  label: 'Step 3: Collect Imagery',
+  onClick: function (){
+    imageryMode = true;
+    Map.remove(bufferPanel);
+    if (selectedGlacierGlobal === null) {
+    print('⚠️ Please select a glacier by clicking on the map');
+    return;
+    }
+    Map.layers().reset();
+    print('Imagery Collection Inititated')
+    var combine_glaciers = selectedGlacierGlobal
+    glaciername = glacierNameInput.getValue();
+    startYear = startYearSlider.getValue();
+    endYear = endYearSlider.getValue();
+    targetMonth = monthSlider.getValue();
+    cloudcover = cloudSlider.getValue();
+    minSunAngle = sunSlider.getValue();
+    var roi = combine_glaciers;
+    var roiMaskImage = ee.Image.constant(1).clip(roi).selfMask();
+    var years = ee.List.sequence(startYear, endYear, 1);
+    
+    var monthStart = Math.max(1, targetMonth-1);
+    var monthEnd = Math.min(12, targetMonth +1);
+    var im_col = ee.List(years).map(function(yr){
+      var area = roi;
+      
+      var l5 = ee.ImageCollection("LANDSAT/LT05/C02/T1_L2")
+        .filterBounds(area)
+        .filter(ee.Filter.calendarRange(startYear, endYear, 'year'))
+        .filter(ee.Filter.calendarRange(monthStart, monthEnd, 'month'))
+        .filter(ee.Filter.gte('SUN_ELEVATION', minSunAngle))
+        .filter(ee.Filter.lte('CLOUD_COVER_LAND', cloudcover))
+        .map(function (image) {
+            return harmonizeLandsat(image, 'LS5_7', roi, roiMaskImage);
+        });
+      var l7 = ee.ImageCollection("LANDSAT/LE07/C02/T1_L2")
+        .filterBounds(area)
+        .filter(ee.Filter.calendarRange(startYear, endYear, 'year'))
+        .filter(ee.Filter.calendarRange(monthStart, monthEnd, 'month'))
+        .filter(ee.Filter.gte('SUN_ELEVATION', minSunAngle))
+        .filter(ee.Filter.lte('CLOUD_COVER_LAND', cloudcover))
+          // keep only images before scan corrector error
+        .filter(ee.Filter.lte('system:time_start', ee.Date.fromYMD(2002, 12, 31).millis()))
+        .map(function (image) {
+            return harmonizeLandsat(image, 'LS5_7', roi, roiMaskImage);
+        });
+      var l8 = ee.ImageCollection("LANDSAT/LC08/C02/T1_L2")
+        .filterBounds(area)
+        .filter(ee.Filter.calendarRange(startYear, endYear, 'year'))
+        .filter(ee.Filter.calendarRange(monthStart, monthEnd, 'month'))
+        .filter(ee.Filter.gte('SUN_ELEVATION', minSunAngle))
+        .filter(ee.Filter.lte('CLOUD_COVER_LAND', cloudcover))
+        .map(function (image) {
+            return harmonizeLandsat(image, 'LS8_9', roi, roiMaskImage);
+        });
+      var l9 = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2") 
+         .filterBounds(area)
+        .filter(ee.Filter.calendarRange(startYear, endYear, 'year'))
+        .filter(ee.Filter.calendarRange(monthStart, monthEnd, 'month'))
+        .filter(ee.Filter.gte('SUN_ELEVATION', minSunAngle))
+        .filter(ee.Filter.lte('CLOUD_COVER_LAND', cloudcover))
+        .map(function (image) {
+            return harmonizeLandsat(image, 'LS8_9', roi, roiMaskImage);
+        });     
+      var merged = l5.merge(l7).merge(l8).merge(l9);
+      var filtered = merged.filter(ee.Filter.gte('roi_coverage', coverage_min));
+      return ee.List(ee.Algorithms.If(filtered.size().gt(0),
+                                 filtered.toList(filtered.size()),
+                                 ee.List([])));
+    });
+    var im_col_flat = ee.ImageCollection(ee.List(im_col).flatten())
+      .distinct('LANDSAT_SCENE_ID')
+      .sort('system:time_start', true);
+    im_col_flat = im_col_flat.map(function(image){
+      return image.set('image_id', image.get('system:id'));
+    });
+    var total_images = im_col_flat.size()
+    print('Total filtered images found:', total_images);
+//get one image per year, prefer target month
+var OneImagePerYear = ee.List(years).map(function(yr) {
+  yr = ee.Number(yr);
+  
+  var filteredForYear = im_col_flat.filter(ee.Filter.calendarRange(yr, yr, 'year'));
+  var filteredForMonth = filteredForYear.filter(ee.Filter.calendarRange(targetMonth, targetMonth, 'month'));
+  var bestInMonth = filteredForMonth.sort('CLOUD_COVER_LAND', true).first();
+  var bestInYear = filteredForYear.sort('CLOUD_COVER_LAND', true).first();
+  var bestInMonthCloud = ee.Number(ee.Algorithms.If(
+    filteredForMonth.size().gt(0),
+    bestInMonth.get('CLOUD_COVER_LAND'),
+    ee.Number(9999)
+  ));
+  return ee.Algorithms.If(
+    filteredForMonth.size().gt(0).and(bestInMonthCloud.lte(cloudcover-5)),
+    bestInMonth,
+    bestInYear
+    );
+});
+    var OneImageYearly = ee.ImageCollection(OneImagePerYear).sort('system:time_start');
+    var cloudCoverList = OneImageYearly.aggregate_array('CLOUD_COVER_LAND');
+    var monthList = OneImageYearly.aggregate_array('system:time_start').map(function(t) {
+    return ee.Date(t).get('month');
+});
+    var monthCounts = monthList.reduce(ee.Reducer.frequencyHistogram());
+    
+    CollectedImages = OneImageYearly;
+    print('Yearly imagery collection:', OneImageYearly);
+    print('Cloud Cover % Per Year', cloudCoverList);
+    print('Image Month Distribution', monthCounts);
+    Map.centerObject(roi);
+    Map.addLayer(roi.style({color: '000000',fillColor: '00000000'}), {}, 'ROI Outline');
+    Map.addLayer(OneImageYearly.first(), {bands: ['red', 'green', 'blue'], min:0, max:1}, 'First Image RGB');
+    statusLabel.setValue('Step 3 Complete: Imagery collected. \nStep 4:  Select a DEM .')
+
+  }
+  });
+getImages.style().set({
+  color: 'blue',
+  fontWeight: 'bold',
+  width: '170px',
+});
+
+leftPanel.add(getImages);
+
+rightPanel.add(ui.Label({
+  value: 'Processing Options',
+  style: {fontWeight: 'bold', fontSize: '16px', margin: '2px 2px'}
+}))
+
+// DEMs
+var demSources = {
+  'ArcticDEM': ee.Image('UMN/PGC/ArcticDEM/V4/2m_mosaic').select('elevation'),
+  'COPDEM': ee.ImageCollection('COPERNICUS/DEM/GLO30').select('DEM').mosaic().rename('elevation'),
+  'NASADEM': ee.Image('NASA/NASADEM_HGT/001').select('elevation')
+};
+var demSelect = ui.Select({
+  items: ['ArcticDEM', 'COPDEM', 'NASADEM'],
+  placeholder: 'Step 4: Select DEM source',
+  onChange: function(selection) {
+    print('Selected DEM Source:', selection);
+    var dem = demSources[selection];
+    var roiGeom = ee.Feature(selectedGlacierGlobal.first()).geometry();
+
+    var validCount = dem.select('elevation').reduceRegion({
+      reducer: ee.Reducer.count(),
+      geometry: roiGeom,
+      scale: 90,
+      maxPixels: 1e13
+    }).values().get(0);
+
+    ee.Number(ee.Algorithms.If(validCount, validCount, 0)).evaluate(function(count) {
+      print(count >= 1 ? '✅ DEM covers this ROI.' : '⚠️ ERROR: DEM has no valid data over the ROI.');
+    statusLabel.setValue('Step 4 Complete: DEM Selected. \n Step 5: Choose a  Masking Level.')
+    });
+  }
+});
+demSelect.style().set({
+  color: 'blue',
+  fontWeight: 'bold',
+  width: '170px',
+});
+
+rightPanel.add(ui.Label('DEM Source'));
+rightPanel.add(demSelect);
+
+//masking variables and function
+var th_blu_rat = 0.90;
+var blue_limit = 0.20;
+var applyMasking = null
+var maskingSelect = ui.Select({
+  items: ['Off', 'Light', 'Moderate', 'High'],
+  placeholder: 'Step 5: Select Masking Level',
+  onChange: function(selection){
+    if (selection === 'Off') {
+      applyMasking = false;
+      print('Masking disabled');
+    } else {
+      applyMasking = true;
+      if (selection === 'Light') {
+        th_blu_rat = 0.90;
+        blue_limit = 0.10;
+      } else if (selection === 'Moderate') {
+        th_blu_rat = 0.90;
+        blue_limit = 0.20;
+      } else if (selection === 'High') {
+        th_blu_rat = 0.80;
+        blue_limit = 0.25;
+      }
+      print('Masking enabled:', selection,
+            '| Ratio >', th_blu_rat,
+            '| Blue <', blue_limit);
+    }
+    statusLabel.setValue('Step 5 Complete: Masking Selected. \n Step 6: Click "Run Analysis".');
+  }
+  
+});
+maskingSelect.style().set({
+  color: 'blue',
+  fontWeight: 'bold',
+  width: '170px',
+});
+rightPanel.add(ui.Label('Rock/Water Masking'));
+rightPanel.add(maskingSelect);
+//run analysis function
+var runAnalysis = ui.Button({
+  label: 'Step 6: Run Analysis',
+  onClick: function (){
+    Map.layers().reset();
+
+    if (!CollectedImages) {
+      print('Error - Please run "Collect Imagery" first');
+      return;
+    }
+    if (!selectedGlacierGlobal) {
+      print('Error - Please select a glacier first');
+      return;
+    }
+    if (!demSelect.getValue()) {
+      print('Error - Please select a DEM source before running analysis');
+      return;
+    }
+    if (applyMasking===null) {
+      print('Error - Please select a masking strenth before running analysis.');
+      return;
+    }
+    var combine_glaciers = selectedGlacierGlobal;
+    var roi = combine_glaciers;
+    var area = roi.geometry()
+    var roiMask = ee.Image(ee.FeatureCollection(
+                    ee.Feature(area).set('value', 1)
+                    ).reduceToImage(['value'], ee.Reducer.first())
+                );
+    
+    var demSource = demSelect.getValue();
+    var dem;
+    if (demSource === 'ArcticDEM'){
+      dem =  ee.Image('UMN/PGC/ArcticDEM/V4/2m_mosaic').select('elevation');
+    } else if (demSource === 'COPDEM') {
+      dem = ee.ImageCollection("COPERNICUS/DEM/GLO30").filterBounds(area).mosaic().select('DEM').rename('elevation');
+    } else if (demSource == 'NASADEM'){
+      dem = ee.Image('NASA/NASADEM_HGT/001').select('elevation')
+    }
+    var imgCrs = ee.Image(CollectedImages.first()).select('NIR').projection();
+    dem = dem.reproject(imgCrs).updateMask(roiMask);
+    var slope  = ee.Terrain.slope(dem)
+    var aspect = ee.Terrain.aspect(dem)
+    //addition for Four 5 Band (NIR/SWIR) for total area calculation later
+    //clamping to avoid divison by zero and snow/ice reflectance ceiling
+    var addFour5Band = function(image) {
+      var b4 = image.select('NIR').clamp(0.0001, 0.3);
+      var b5 = image.select('SWIR1').clamp(0.0001, 0.3);
+      var four5 = b4.divide(b5).rename('Four5');
+      return image.addBands(four5);
+    };
+    var OneImageYearlyFour5 = CollectedImages.map(addFour5Band);
+    
+    var deg2rad = ee.Number(Math.PI/180);
+    //topographic correction - Ekstrand
+    var ekstrandCorrection = function(image, slope, aspect, geom, bandList) {
+      var cos_e = ee.Image(slope).multiply(deg2rad).cos();
+      var sin_e = ee.Image(slope).multiply(deg2rad).sin();
+      var cos_z = ee.Image.constant(ee.Number(90).subtract(ee.Number(ee.Image(image)
+          .get('SUN_ELEVATION'))).multiply(deg2rad)).cos();
+      var sin_z = ee.Image.constant(ee.Number(90).subtract(ee.Number(ee.Image(image)
+          .get('SUN_ELEVATION'))).multiply(deg2rad)).sin();
+      var cos_AziMinusAsp = ee.Image.constant(ee.Number(ee.Image(image)
+          .get('SUN_AZIMUTH')).multiply(deg2rad))
+              .subtract(ee.Image(aspect).multiply(deg2rad)).cos();
+      var cos_i = cos_e.multiply(cos_z)
+          .add(sin_e.multiply(sin_z).multiply(cos_AziMinusAsp));
+      var x = cos_i.multiply(cos_e).log().rename('x');
+
+      var bandNames = ee.List(ee.Image(image).select(bandList).bandNames());
+      var bandNamesOut = bandNames.map(function(band){ return ee.String(band).cat('Eks'); });
+
+      var bandsOut = ee.ImageCollection(bandNames.map(function(band){
+        var y = ee.Image(ee.Image(image).select([band]).multiply(cos_e)).log().rename('y');
+        // OLS slope via linearFit over all ROI pixels ('scale' = slope, 'offset' = intercept)
+        var k = ee.Number(x.addBands(y).reduceRegion({
+            reducer: ee.Reducer.linearFit(), geometry: geom, scale: 30, maxPixels: 1e13
+          }).get('scale'));
+        var ekstrand = ee.Image(image).select([band])
+            .multiply((cos_z.divide(cos_i)).pow(cos_i.multiply(k)))
+            .rename('ekstrand');
+        return ee.Image(ekstrand).set('k', k);
+      }));
+
+      var kVals = bandsOut.aggregate_array('k');
+      var eksBands = bandsOut.toBands().rename(bandNamesOut);
+      return eksBands.set(ee.Dictionary.fromLists(bandNamesOut, ee.List(kVals)))
+        .addBands(image.select('Four5'))
+        .copyProperties(image, ['system:time_start', 'system:index', 'system:id', 'LANDSAT_PRODUCT_ID',
+          'DATE_ACQUIRED', 'SUN_ELEVATION', 'SUN_AZIMUTH', 'CLOUD_COVER_LAND','cloud_pct_roi',
+          'LANDSAT_SCENE_ID', 'SPACECRAFT_ID']);
+    };
+    var analysisBands = ['blue', 'green', 'red', 'NIR','SWIR1', 'SWIR2', 'thermal'];
+    var CorrectedImages = OneImageYearlyFour5.map(function(image){
+      return ekstrandCorrection(image, slope, aspect, roi, analysisBands);
+    });
+    //rock and water masking
+    var createApplyMasks = function(image){
+      var ratio = image.select('thermalEks').divide(image.select('blueEks'));
+      var rock_mask = ratio.gt(th_blu_rat).and(image.select('blueEks').lt(blue_limit));
+      return image.updateMask(rock_mask.not()).addBands(rock_mask.rename('rock_water_mask'));
+    };
+
+    var bestImageYearly = applyMasking
+      ? CorrectedImages.map(createApplyMasks)
+      : CorrectedImages;
+     //otsu calculation 
+    var calc_otsu = function(hist) {
+      var counts = ee.Array(ee.Dictionary(hist).get('histogram'));
+      var means = ee.Array(ee.Dictionary(hist).get('bucketMeans'));
+      var size = means.length().get([0]);
+      var total = counts.reduce(ee.Reducer.sum(), [0]).get([0]);
+      var sum = means.multiply(counts).reduce(ee.Reducer.sum(), [0]).get([0]);
+      var mean = sum.divide(total);
+      var indices = ee.List.sequence(1,size);
+      var bss = indices.map(function(i) {
+        var aCounts = counts.slice(0, 0, i);
+        var aCount = aCounts.reduce(ee.Reducer.sum(), [0]).get([0]);
+        var aMeans = means.slice(0, 0, i);
+        var aMean = aMeans.multiply(aCounts).reduce(ee.Reducer.sum(), [0])
+            .get([0]).divide(aCount);
+        var bCount = total.subtract(aCount);
+        var bMean = sum.subtract(aCount.multiply(aMean)).divide(bCount);
+        return aCount.multiply(aMean.subtract(mean).pow(2)).add(
+               bCount.multiply(bMean.subtract(mean).pow(2)));
+      });
+      return means.sort(bss).get([-1]);
+    };
+    //NIR band histogram assessment for bimodal distribution
+    var OTSU_MIN_CLASS_FRACTION = 0.02;
+    var OTSU_MIN_PEAK_BALANCE = 0.10;
+    var OTSU_MIN_CLASS_FRACTION_DOMINANT_PEAK = 0.05;
+    var OTSU_MIN_PEAK_BALANCE_DOMINANT_PEAK = 0.20;
+ 
+    var bimodality = function(hist, threshold){
+      hist = ee.Dictionary(hist);
+      var counts = ee.Array(hist.get('histogram'));
+      var means  = ee.Array(hist.get('bucketMeans'));
+      var size   = ee.Number(means.length().get([0]));
+      var total  = ee.Number(counts.reduce(ee.Reducer.sum(), [0]).get([0]));
+      threshold  = ee.Number(threshold);
+ 
+      // split index = number of buckets whose center < threshold
+      // (i.e. the darker ice/firn class). splitIndex is therefore the
+      // first index belonging to the bright/snow class.
+      var belowMask = means.lt(threshold);                       // 1 where center < threshold
+      var splitIndex = ee.Number(belowMask.reduce(ee.Reducer.sum(), [0]).get([0]));
+      // clamp into interior so slices are valid
+      splitIndex = splitIndex.max(1).min(size.subtract(1));
+ 
+      // class counts either side of the split
+      var classA = ee.Number(counts.slice(0, 0, splitIndex).reduce(ee.Reducer.sum(), [0]).get([0]));
+      var classB = total.subtract(classA);
+      var classBalance = classA.min(classB).divide(total);
+ 
+      // peak heights either side
+      var leftPeak  = ee.Number(counts.slice(0, 0, splitIndex).reduce(ee.Reducer.max(), [0]).get([0]));
+      var rightPeak = ee.Number(counts.slice(0, splitIndex).reduce(ee.Reducer.max(), [0]).get([0]));
+      var peakBalance = leftPeak.min(rightPeak).divide(ee.Number(1).max(leftPeak.max(rightPeak)));
+ 
+      var reason = ee.String(ee.Algorithms.If(
+        peakBalance.lt(OTSU_MIN_PEAK_BALANCE),
+        'secondary_peak_too_small',
+      ee.Algorithms.If(
+        classBalance.lt(OTSU_MIN_CLASS_FRACTION_DOMINANT_PEAK)
+          .and(peakBalance.lt(OTSU_MIN_PEAK_BALANCE_DOMINANT_PEAK)),
+        'secondary_peak_too_small',
+      ee.Algorithms.If(
+        classBalance.lt(OTSU_MIN_CLASS_FRACTION),
+        'class_imbalance',
+        'ok'))));
+ 
+      var ok = ee.Number(ee.Algorithms.If(reason.compareTo('ok').eq(0), 1, 0));
+ 
+      return ee.Dictionary({
+        ok: ok,
+        reason: reason,
+        class_balance: classBalance,
+        peak_balance: peakBalance
+      });
+    };
+    //process images to get snow cover and total area masks
+    var processImages = function(image) {
+      var green = image.select('greenEks');
+      var swir = image.select('SWIR1Eks');
+      var ndsi = green.subtract(swir).divide(green.add(swir)).rename('NDSI');
+      var four5 = image.select('Four5');
+      //total area from NDSI and NIR/SWIR threshold
+      var ndsi_mask = ndsi.gt(0.4).and(four5.gt(1.4)).selfMask().rename('NDSI_masked');
+      var DEM = dem.rename('dem')
+      var bandName = 'NIREks'
+      var nir = image.select(bandName)
+      //Use total area to find snow cover area
+      var nir_glacier = nir.updateMask(ndsi_mask)
+      var hist = nir_glacier.reduceRegion({
+        reducer: ee.Reducer.histogram(), 
+        geometry: roi, scale: 30, maxPixels: 1e13
+      }).get(bandName);
+
+      var otsu = ee.Algorithms.If(
+        ee.Algorithms.IsEqual(hist, null), null, calc_otsu(hist)
+      );
+      // bimodality QA: flag if NIR isn't bimodal
+      var bim = ee.Dictionary(ee.Algorithms.If(
+        ee.Algorithms.IsEqual(hist, null),
+        ee.Dictionary({ok: 0, reason: 'empty_histogram', class_balance: -1, peak_balance: -1}),
+        bimodality(hist, ee.Algorithms.If(ee.Algorithms.IsEqual(otsu, null), 0, otsu))
+      ));
+      var bimOk = ee.Number(bim.get('ok'))
+      //snow cover mask
+      var nir_masked = ee.Image(ee.Algorithms.If(
+        otsu,
+        nir.updateMask(ndsi_mask)
+          .gt(ee.Number(otsu))
+          .selfMask().rename('NIR_masked'),
+        ee.Image(0).updateMask(ee.Image(0)).rename('NIR_masked')
+      ));
+      var SCAdem = DEM.updateMask(nir_masked).rename('SCAdem');
+      var NDSIdem = DEM.updateMask(ndsi_mask).rename('NDSIdem');
+
+      return image
+        .addBands([ndsi, ndsi_mask, nir_masked, SCAdem, NDSIdem, DEM])
+        .set('otsu_'+ bandName, otsu)
+        .set('bimodal_ok', bimOk)
+        .set('rejection_reason', bim.get('reason'))
+        .set('class_balance', bim.get('class_balance'))
+        .set('peak_balance', bim.get('peak_balance'))
+        .copyProperties(image, [
+      'system:time_start', 'system:index', 
+      'LANDSAT_PRODUCT_ID', 'DATE_ACQUIRED','CLOUD_COVER_LAND','cloud_pct_roi',
+      'LANDSAT_SCENE_ID', 'SPACECRAFT_ID'
+    ]);
+    };
+    var AllMasks = bestImageYearly.map(processImages).map(function(image) {
+      image = ee.Image(image);
+      var constrained = image.select('NIR_masked')
+                             .multiply(image.select('NDSI_masked'))
+                             .rename('NIR_masked');
+      image = image.addBands({
+        srcImg: constrained, 
+        overwrite: true});
+      //pixel count for area
+      var counts = image.select(['NDSIdem']).reduceRegion({
+        reducer: ee.Reducer.count(),
+        geometry: roi,
+        scale: 30,
+        maxPixels: 1e13
+      });
+      return image.set({
+        'NDSIdem_count': counts.get('NDSIdem')
+      });
+    }).filter(ee.Filter.gt('NDSIdem_count', 0));
+    // calculate areas
+    function calculateAreas(image){
+      var SCAdem = image.select('SCAdem');
+      var NDSIdem = image.select('NDSIdem');
+      var snow_pixels = SCAdem.gt(0).multiply(ee.Image.pixelArea());
+      var NDSI_pixels = NDSIdem.gt(0).multiply(ee.Image.pixelArea());
+
+      var snowAndTotalArea = ee.Image(snow_pixels).addBands(NDSI_pixels)
+        .reduceRegion({
+          reducer: ee.Reducer.sum(), 
+          geometry: roi, 
+          scale: 30, 
+          maxPixels: 1e13
+      });
+
+      var snowArea = ee.Number(snowAndTotalArea.get('SCAdem')).divide(1e6);
+      var ndsiArea = ee.Number(snowAndTotalArea.get('NDSIdem')).divide(1e6);
+      var validTotalArea = ndsiArea.gt(0);//ensure non zero results
+      //calculate AAR
+      var aar = ee.Algorithms.If(
+        validTotalArea,
+        snowArea.divide(ndsiArea),
+        null
+      );
+      aar = ee.Number(aar);
+      var validAAR = validTotalArea
+        .and(aar.gte(0))
+        .and(aar.lt(1));
+
+      var aarPercent = ee.Number(aar).multiply(100);
+      var backfillPercent = ee.Algorithms.If(validAAR, 
+        ee.Number(100).subtract(aarPercent).clamp(0, 100), null);
+      //Calculate snowline
+      var snowline = ee.Algorithms.If(validAAR,
+        NDSIdem.reduceRegion({
+          reducer: ee.Reducer.percentile([backfillPercent]),
+          geometry: roi, 
+          scale: 30, 
+          maxPixels: 1e13
+        }).get('NDSIdem'),
+        null);
+      //add errors
+      var snowAreaErr = snowArea.multiply(0.07);
+      var ndsiAreaErr = ndsiArea.multiply(0.03);
+      var snowlineErr = ee.Algorithms.If(validAAR, ee.Number(snowline).multiply(0.01), null);
+      
+      return ee.Feature(null, {
+        'imageID': image.get('LANDSAT_PRODUCT_ID'),
+        'imageDate': image.get('DATE_ACQUIRED'),
+        'CloudCover': image.get('CLOUD_COVER_LAND'),
+        'CloudPct_ROI': image.get('cloud_pct_roi'),
+        'SnowCoverArea_km2': snowArea,
+        'SnowCoverArea_Error_km2':snowAreaErr,
+        'TotalArea_km2': ndsiArea,
+        'TotalArea_Error_km2':ndsiAreaErr,
+        'AAR': aar,
+        'Snowline_m': snowline,
+        'Snowline_Error_m': snowlineErr,
+        'BimodalOK': image.get('bimodal_ok'),
+        'RejectionReason': image.get('rejection_reason'),
+        'ClassBalance': image.get('class_balance'),
+        'PeakBalance': image.get('peak_balance'),
+        'validAAR': validAAR
+      });
+    }
+    
+      var AllAreas = AllMasks
+      .map(calculateAreas)
+      .filter(ee.Filter.eq('validAAR', 1));
+    
+    var limited = AllAreas.limit(1);
+    print('Test Result Print', limited)
+    var nImages = AllMasks.size();
+    print('Number of images analyzed:', nImages);
+    
+    // QA diagnostics: see how often bimodality rejection fires (can remove later)
+    print('Bimodality reasons:', AllMasks.aggregate_array('rejection_reason'));
+
+    var ResultsCollection = AllAreas
+    //print('Analysis Complete! \n Go to Tasks Tab for Exports')
+    statusLabel.setValue('Analysis Complete!\nGo to the Tasks tab to run your exports.');
+    
+    var firstMask = AllMasks.first();
+    Map.addLayer(roi.style({color: '000000',fillColor: '00000000'}), {}, 'ROI Outline');
+    Map.addLayer(firstMask, {bands: ['greenEks', 'redEks', 'blueEks'], min:0, max:1}, 'First Image RGB');
+    Map.addLayer(firstMask.select('NDSI_masked').selfMask(), {min: 0, max: 1, palette: ['white', '#1d91c0']}, 'First Image Total area mask');
+    Map.addLayer(firstMask.select('NIR_masked').selfMask(), {min: 0, max: 1, palette: ['white', '#c7e9b4']}, 'First Image Snow mask');
+
+//Exports
+    Export.table.toDrive({
+      collection: ResultsCollection,
+      description: glaciername+'_Results',
+      folder: 'GEE_Health_Tool',
+      fileFormat: 'CSV',
+      selectors: ['imageID', 'imageDate', 'CloudCover', 'CloudPct_ROI', 'SnowCoverArea_km2', 
+                 'SnowCoverArea_Error_km2','TotalArea_km2', 'TotalArea_Error_km2',
+                 'AAR', 'Snowline_m', 'Snowline_Error_m', 
+                 'BimodalOK', 'RejectionReason', 'ClassBalance', 'PeakBalance'] 
+   });
+    var exportDEMHistogramAsCSV = function(image){
+      var maskedDEM = image.select('SCAdem');
+      var hist = maskedDEM.reduceRegion({
+        reducer: ee.Reducer.histogram({minBucketWidth: 50}),
+        geometry:roi, 
+        scale:30,
+        maxPixels: 1e11
+      }).get('SCAdem');
+   var histDict = ee.Dictionary(hist);
+   var bucketMeans = ee.List(histDict.get('bucketMeans'));
+   var counts = ee.List(histDict.get('histogram'));
+   var imDateMillis=ee.Date(ee.Image(image).get('system:time_start'))
+    var histData = bucketMeans.zip(counts).map(function(pair) {
+      var bucket = ee.List(pair).get(0);
+     var count = ee.List(pair).get(1);
+     return ee.Feature(null, {bucketMean: bucket,
+                              count: count,
+                              glacierName: glaciername,
+                              year: ee.Date(imDateMillis).get('year'),
+                             imDate: ee.Date(imDateMillis).format('YYYY_MM_dd')});
+    });
+   return ee.FeatureCollection(histData);
+   };
+   var histTableOut = ee.ImageCollection(AllMasks).map(exportDEMHistogramAsCSV)
+                         .flatten()
+   Export.table.toDrive({
+     collection: histTableOut,
+     description: glaciername+'_SCA_Histogram',
+     folder: 'GEE_Health_Tool',
+     fileFormat: 'CSV'
+   });
+    var exportTAHistogramAsCSV = function(image){
+      var maskedDEM = image.select('NDSIdem');
+      var result = maskedDEM.reduceRegion({
+        reducer: ee.Reducer.histogram({minBucketWidth: 50}),
+        geometry:roi, 
+        scale:30,
+        maxPixels: 1e11
+      });
+      var hist = ee.Algorithms.If(
+        result.contains('NDSIdem'),
+        ee.Dictionary(result.get('NDSIdem')),
+        ee.Dictionary({'bucketMeans': ee.List([]), 'histogram': ee.List([])})
+        );
+   var histDict = ee.Dictionary(hist);
+   var bucketMeans = ee.List(histDict.get('bucketMeans'));
+   var counts = ee.List(histDict.get('histogram'));
+   var imDateMillis=ee.Date(ee.Image(image).get('system:time_start'))
+    var histData = bucketMeans.zip(counts).map(function(pair) {
+      var bucket = ee.List(pair).get(0);
+     var count = ee.List(pair).get(1);
+     return ee.Feature(null, {bucketMean: bucket,
+                              count: count,
+                              glacierName: glaciername,
+                              year: ee.Date(imDateMillis).get('year'),
+                             imDate: ee.Date(imDateMillis).format('YYYY_MM_dd')});
+    });
+   return ee.FeatureCollection(histData);
+   };
+   var TAhistTableOut = ee.ImageCollection(AllMasks).map(exportTAHistogramAsCSV)
+                         .flatten()
+   Export.table.toDrive({
+     collection: TAhistTableOut,
+     description:glaciername+ '_TA_Histogram',
+     folder: 'GEE_Health_Tool',
+     fileFormat: 'CSV'
+   });
+   var AllMasksList = AllMasks.toList(AllMasks.size());
+   var SCAshp=ee.ImageCollection(AllMasksList).select('NIR_masked')
+          .map(function(im){
+            var imDateMillis=ee.Image(im).get('system:time_start')
+            var vectors = ee.Image(im).reduceToVectors({
+                            reducer: ee.Reducer.countEvery(),
+                            scale: 30,
+                            geometry: roi,
+                            maxPixels: 1e11
+                          }).map(function(feat){
+                            return ee.Feature(feat)  //can add any extra useful metadata here
+                              .set('imDate',ee.Date(imDateMillis).format('YYYY_MM_dd'),
+                                'year',ee.Date(imDateMillis).get('year'),
+                                'imID',ee.Image(im).get('LANDSAT_SCENE_ID'),
+                                'sensor',ee.Image(im).get('SPACECRAFT_ID'))
+                              });
+            return ee.FeatureCollection(vectors)
+          }).flatten()
+    Export.table.toDrive({
+        collection: ee.FeatureCollection(SCAshp),
+        folder: 'GEE_Health_Tool',
+        description: glaciername+'_SCA',
+        fileFormat: 'SHP'
+    });
+    var TAshp =ee.ImageCollection(AllMasks).select('NDSI_masked').map(function(im){
+    var imDateMillis=ee.Image(im).get('system:time_start')
+    var vectors = ee.Image(im).reduceToVectors({
+      reducer: ee.Reducer.countEvery(),
+      scale: 30,
+      geometry: roi,
+      maxPixels: 1e11
+    }).map(function(feat){
+      return ee.Feature(feat).set('imDate',ee.Date(imDateMillis).format('YYYY_MM_dd'),
+                'year',ee.Date(imDateMillis).get('year'),
+                'imID',ee.Image(im).get('LANDSAT_SCENE_ID'),
+                'sensor',ee.Image(im).get('SPACECRAFT_ID'))
+    });
+    return ee.FeatureCollection(vectors)
+  }).flatten()
+  
+  Export.table.toDrive({
+      collection: ee.FeatureCollection(TAshp),
+      folder: 'GEE_Health_Tool',
+      description: glaciername+'_TA',
+      fileFormat: 'SHP'
+    });
+
+  }});
+runAnalysis.style().set({
+  color: 'blue',
+  fontWeight: 'bold',
+  width: '170px',
+});
+rightPanel.add(runAnalysis);
